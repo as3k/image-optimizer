@@ -1,65 +1,82 @@
-const sharp = require('sharp')
-const progress = require('cli-progress')
 const fs = require('fs')
+const sharp = require('sharp')
 
 const width = parseInt(process.env.IMG_WIDTH)
 const quality = parseInt(process.env.IMG_QUALITY)
+const forceJpg = process.env.FORCE_JPG
+const quiet = process.env.QUIET
+
 const imagesDir = './images/in'
 const outputDir = './images/out'
-
-const allowedFiletypes = ['jpg', 'jpeg', 'png']
-
-const bar1 = new progress.SingleBar( {}, progress.Presets.shades_classic )
-
+const fileTypes = ['jpg', 'jpeg', 'png']
 
 // check for output dir, if it doesn't exist, create it
-if (!fs.existsSync(outputDir)) {
-  fs.mkdirSync(outputDir)
+if (!fs.existsSync(outputDir)) { fs.mkdirSync(outputDir) }
+
+// extract the file extension from the image file provided.
+const getFileType = file => { return file.split('.').pop() }
+
+// Optimize Image Function
+const optimize = image => {
+  // Set image options 
+  const imgOptions = { quality, progressive: true, force: false }
+  sharp(`${imagesDir}/${image}`)
+    .resize({ width })                // resize the image to the width env variable
+    .jpeg(imgOptions)                 
+    .png(imgOptions)
+    .toFile(`${outputDir}/${image}`)  // save the file
+    .then(({ size, format }) => {
+      if (!quiet) {
+        console.log({ format, size, image })
+      }
+    })  
+    .catch(err => console.error(err))
 }
 
-const getFileType = file => {
-  return file.split('.').pop()
+const optimizeJpg = image => {
+  // Set image options 
+  const imgOptions = { quality, progressive: true, force: true }
+  sharp(`${imagesDir}/${image}`)
+    .resize({ width })                // resize the image to the width env variable
+    .jpeg(imgOptions)  
+    .toFile(`${outputDir}/${image}`)  // save the file
+    .then(({ size, format }) => {
+      if (!quiet) {
+        console.log({ type: format, size, origin: image })
+      }
+    })  
+    .catch(err => console.error(err))
 }
 
-const optim = {
-  jpeg(image) {
-    sharp(`${imagesDir}/${image}`)
-      .resize({ width: width })
-      .jpeg({ quality: quality })
-      .toFile(`${outputDir}/${image}`)
-      .then(info => console.log(info))
-      .catch(err => console.error(err))
-  },
-  png(image)  { 
-    sharp(`${imagesDir}/${image}`)
-      .resize({ width: width })
-      .png({ quality: quality })
-      .toFile(`${outputDir}/${image}`)
-      .then(info => console.log(info))
-      .catch(err => console.error(err))
-  }
-}
 
 // get any images that are in the images directory
 const images = fs.readdirSync(imagesDir)
-let currentCount = 0
-bar1.start(images.length, currentCount)
+let completeCount = 0
 
+
+// Loop through the images and do the thing!
 images.forEach(image => {
   // if file extension is jpg/jpeg
   const ext = getFileType(image)
 
-  if (ext == 'jpg' || ext == 'jpeg') { // if extension is jpg/jpeg
-    optim.jpeg(image) 
-  } else if (ext == 'png') { // if extension is png
-    optim.png(image) 
-  } else { 
-    console.error(`${image} | filetype is not allowed.`) 
+  // if the filetype isn't allowed alert the user in the console.
+  // and on to the next one.
+  if (!fileTypes.includes(ext)) {
+    console.error(`${image} | filetype is not allowed`)
+  } else {
+    if (forceJpg) { 
+      optimizeJpg(image)
+    } else {
+      optimize(image)
+    }
+    completeCount += 1
   }
 
-  currentCount ++
-  bar1.update(currentCount)
+})
 
-  if (currentCount == images.length) { bar1.stop() }
+if (completeCount > 0) {
+  console.log(`\n\nCompleted ${completeCount} images. \nThey're located in '{imgVolume}/out'.\n\n`)
+} else {
+  console.log('\n\n\\No images completed.\nCheck your file types ["png", "jpg", "jpeg"] only. \n\n')
+}
 
-}) 
