@@ -44,6 +44,9 @@ const optimizeJpg = image => {
       if (!quiet) {
         console.log({ type: format, size, origin: image })
       }
+      fs.chown(`${outputDir}/${image}`, 1000, 1000, (err) => {
+        if (err) { console.log( err ) }
+      })
     })  
     .catch(err => console.error(err))
 }
