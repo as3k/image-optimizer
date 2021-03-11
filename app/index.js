@@ -11,7 +11,17 @@ const outputDir = './images/out'
 const fileTypes = ['jpg', 'jpeg', 'png']
 
 // check for output dir, if it doesn't exist, create it
-if (!fs.existsSync(outputDir)) { fs.mkdirSync(outputDir) }
+// if it does exist, remove all images inside.
+if (!fs.existsSync(outputDir)) { 
+  fs.mkdirSync(outputDir) 
+} else {
+  let files = fs.readdirSync(outputDir)
+  files.forEach(file => fs.unlink(`${outputDir}/${file}`, (err) => {
+    if (err) throw err;
+  }))
+}
+
+
 
 // extract the file extension from the image file provided.
 const getFileType = file => { return file.split('.').pop() }
