@@ -21,7 +21,7 @@ basic command
 `docker run --rm -v $(pwd)/images:/app/images iamasek/image-optimizer`
 
 command with width set
-`docker run --rm -v -e IMG_WIDTH=2400 $(pwd)/images:/app/images iamasaek/image-optimizer`
+`docker run --rm -v $(pwd)/images:/app/images -e IMG_WIDTH=2400 iamasaek/image-optimizer`
 
 command with quality set
-`docker run --rm -v -e IMG_QUALITY=55 $(pwd)/images:/app/images iamasaek/image-optimizer`
+`docker run --rm -v $(pwd)/images:/app/images -e IMG_QUALITY=55 iamasaek/image-optimizer`
