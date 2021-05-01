@@ -26,23 +26,6 @@ if (!fs.existsSync(outputDir)) {
 // extract the file extension from the image file provided.
 const getFileType = file => { return file.split('.').pop() }
 
-// Optimize Image Function
-const optimize = image => {
-  // Set image options 
-  const imgOptions = { quality, progressive: true, force: false }
-  sharp(`${imagesDir}/${image}`)
-    .resize({ width })                // resize the image to the width env variable
-    .jpeg(imgOptions)                 
-    .png(imgOptions)
-    .toFile(`${outputDir}/${image}`)  // save the file
-    .then(({ size, format }) => {
-      if (!quiet) {
-        console.log({ format, size, image })
-      }
-    })  
-    .catch(err => console.error(err))
-}
-
 const optimizeJpg = image => {
   // Set image options 
   const imgOptions = { quality, progressive: true, force: true }
@@ -61,6 +44,24 @@ const optimizeJpg = image => {
     .catch(err => console.error(err))
 }
 
+const optimizePng = image => {
+  // Set image options
+  const imgOptions = { quality, progressive: true, force: true }
+  sharp(`${imagesDir}/${image}`)
+    .resize({ width })
+    .png(imgOptions)
+    .toFile(`${outputDir}/${image}`)
+    .then(({size, format}) => {
+      if (!quiet) {
+        console.log({ type: format, size, origin: image })
+      }
+      fs.chown(`${outputDir}/${image}`, 1000, 1000, (err) => {
+        if (err) {console.log(err)}
+      })
+    })
+    .catch(err => console.error(err))
+}
+
 
 // get any images that are in the images directory
 const images = fs.readdirSync(imagesDir)
@@ -69,7 +70,7 @@ let completeCount = 0
 
 // Loop through the images and do the thing!
 images.forEach(image => {
-  // if file extension is jpg/jpeg
+  // get file extension
   const ext = getFileType(image)
 
   // if the filetype isn't allowed alert the user in the console.
@@ -77,10 +78,10 @@ images.forEach(image => {
   if (!fileTypes.includes(ext)) {
     console.error(`${image} | filetype is not allowed`)
   } else {
-    if (forceJpg) { 
+    if (ext === 'jpeg' || ext === 'jpg') { 
       optimizeJpg(image)
     } else {
-      optimize(image)
+      optimizePng(image)
     }
     completeCount += 1
   }
